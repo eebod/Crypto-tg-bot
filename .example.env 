@@ -1,0 +1,5 @@
+BOT_TOKEN=<telegram_bot_token_from_bot_father>
+COINGECKO_TOKEN=<coingecko_api_token>
+DB_CONNECTION_URI=mongodb://<...>/
+WEBHOOK_URL=<webhook_url_for_telegram>
+NODE_ENV=<DEV | PROD>
