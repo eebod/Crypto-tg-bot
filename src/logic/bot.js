@@ -32,7 +32,7 @@ if (process.env.NODE_ENV == 'PROD') {
 // Response on first bot interaction/call
 bot.onText(/\/start/, async (msg, match) => {
   try {
-    const message = `Welcome <b>${msg.chat.username}</b>, I'm <b>Trendora</b>, your cryptocurrency assistant. I can help you with: \n\n➙ <b>Live Prices:</b> Get real-time cryptocurrency prices.\n\n➙ <b>Price Monitoring:</b> Keep track of price changes and receive alerts:\n\n      • Target price reached/crossed(↑|↓).\n\n      • 0.1% price UP or DOWN threshold alert.\n\n➙ <b>Trending Cryptos:</b> Discover the top trending cryptocurrencies, sorted by search popularity.\n\nTo learn and get started with available commands, use /help\n\nPowered by <b><a href="https://www.coingecko.com/en/api/">CoinGecko</a></b>\n\n<b><a href="https://www.ebode.dev">Meet-me</a></b> to meet-me &lt;Backend Engineer&gt;`;
+    const message = `Welcome <b>${msg.chat.username}</b>, I'm <b>Trendora</b>, your cryptocurrency assistant. I can help you with: \n\n➙ <b>Live Prices:</b> Get real-time cryptocurrency prices.\n\n➙ <b>Price Monitoring:</b> Keep track of price changes and receive alerts:\n\n      • Target price reached/crossed(↑|↓).\n\n      • 0.1% price UP or DOWN threshold alert.\n\n➙ <b>Trending Cryptos:</b> Discover the top trending cryptocurrencies, sorted by search popularity.\n\nTo learn and get started with available commands, use /help\n\nPowered by <b><a href="https://www.coingecko.com/en/api/">CoinGecko</a></b>\n\n<b><a href="https://www.ebode.dev">Meet-me</a></b> | &lt;Backend Engineer&gt;`;
     await bot.sendMessage(msg.chat.id, message, {
       parse_mode: "HTML",
       disable_web_page_preview: false,
@@ -79,13 +79,16 @@ bot.onText(/\/trending(?: (\d+))?/, async (msg, match) => {
       },
     };
 
-    const response = await axios.get(url, options);
+    const response = await axios.request(url, options);
     const data = response.data;
+    if (!response) {
+      return await bot.sendMessage(msg.chat.id, "No item found!");
+    }
 
     const message = `<b><u>Trending</u></b>\n\n${data.coins
       .slice(0, qty)
       .map((val, index) => {
-        return `${index + 1}. - Id: <b>${val.item.id}</b>\n     - Coin Id: <b>${val.item.coin_id
+        return `${index + 1}. - ID: <b>${val.item.id}</b>\n     - Coin Id: <b>${val.item.coin_id
           }</b>\n     - Name: <b>${val.item.name}</b>\n     - Ticker: <b>${val.item.symbol
           }</b>\n     - Market Cap: <b>${val.item.data.market_cap
           }</b>\n     - Market Cap Rank: <b>${val.item.market_cap_rank
@@ -125,9 +128,6 @@ bot.onText(/\/find (.+)/, async (msg, match) => {
 
     const response = await axios.get(url, options);
     const data = response.data;
-    if (data.coins.length < 1) {
-      return await bot.sendMessage(chatId, "No Item found!");
-    }
 
     const message = `<b><u>Top Matching Results</u></b>\n\n${data.coins
       .slice(0, 5)
@@ -148,6 +148,7 @@ bot.onText(/\/find (.+)/, async (msg, match) => {
     });
   } catch (error) {
     console.error(error);
+    if(error.message.includes('404')) return await bot.sendMessage(msg.chat.id, "No Item found.");
     await bot.sendMessage(msg.chat.id, "An error occured, please try again.");
   }
 });
@@ -182,10 +183,6 @@ bot.onText(/\/price (.+)/, async (msg, match) => {
     const response = await axios.get(url, options);
     const data = response.data;
 
-    if (data.error) {
-      return await bot.sendMessage(msg.chat.id, "Coin not found!");
-    }
-
     const message = `<b><u>Coin Data</u></b>\n1. Name: <b>${data.name
       }</b>\n2. Ticker: <b>${String(
         data.symbol
@@ -212,6 +209,7 @@ bot.onText(/\/price (.+)/, async (msg, match) => {
     await bot.sendMessage(chatId, message, { parse_mode: "HTML" });
   } catch (error) {
     console.error(error);
+    if(error.message.includes('404')) return await bot.sendMessage(msg.chat.id, "Coin not found. Use the /find command.");
     await bot.sendMessage(msg.chat.id, "An error occured, please try again.");
   }
 });
@@ -276,12 +274,8 @@ bot.onText(/\/info (.+)/, async (msg, match) => {
       },
     };
 
-    const response = await axios.get(url, options);
+    const response = await axios.request(url, options);
     const data = response.data;
-
-    if (data.error) {
-      return await bot.sendMessage(msg.chat.id, "Coin not found!");
-    }
 
     const message = `<b><u>Coin Information</u></b>\n1. Name: <b>${data.name
       }</b>\n2. Ticker: <b>${String(
@@ -329,6 +323,7 @@ bot.onText(/\/info (.+)/, async (msg, match) => {
     return await bot.sendMessage(chatId, historyMessage, { parse_mode: "HTML", disable_web_page_preview: true })
   } catch (error) {
     console.error(error.message);
+    if(error.message.includes('404')) return await bot.sendMessage(msg.chat.id, "Coin not found. Use the /find command.");
     await bot.sendMessage(msg.chat.id, "An error occured, please try again.");
   }
 });
@@ -399,7 +394,7 @@ bot.onText(/\/setalert (.+) (\d+(\.\d+)?)/, async (msg, match) => {
       });
     };
 
-    await bot.sendMessage(chatId, `<b><u>Alert</u></b>\n]nAlert set for <b>'${cryptoId}'</b> at price <b>${formatCurrency(price)}</b>.\n\nAlert ID: <b>${alertCode}</b>\n\nUnset alerts: <b>${3 - (1 + alerts)}</b>\n\n<b><u>Info</u></b>\n\nYou are advised to set a different notification sound for this chat, this helps easily identify alert notification. You can watch this <b><a href="https://youtube.com/shorts/nqXO5MGH2Y8">video</a></b> to learn how.\n\nAlert notifications are delivered with three rapid consecutive messages and notifications.\n\nPlease take note.`, { parse_mode: 'HTML', disable_web_page_preview: true });
+    await bot.sendMessage(chatId, `<b><u>Alert</u></b>\nAlert set for <b>'${cryptoId}'</b> at price <b>${formatCurrency(price)}</b>.\n\nAlert ID: <b>${alertCode}</b>\n\nUnset alert(s) left: <b>${3 - (1 + alerts)}</b>\n\n<b><u>Info</u></b>\n\nYou are advised to set a different notification sound for this chat. This would help easily identify alert notification. You can watch this <b><a href="https://youtube.com/shorts/nqXO5MGH2Y8">video</a></b> to learn how.\n\nAlert notifications are delivered with three rapid consecutive messages and notifications.\n\nPlease take note!`, { parse_mode: 'HTML', disable_web_page_preview: true });
   } catch (error) {
     console.error(error);
     await bot.sendMessage(msg.chat.id, "An error occurred, please try again.");
@@ -416,7 +411,7 @@ bot.onText(/\/listalert/, async (msg, match) => {
     }
 
     const alertList = await cryptoTrendsDB.retrieveAlerts(msg.chat.id);
-    if (!alertList) return await bot.sendMessage(chatId, "There are no alert items available.");
+    if (!alertList || alertList.length<1) return await bot.sendMessage(chatId, "There are no alert items available.");
 
     const formatCurrency = (value) => {
       return value.toLocaleString("en-US", {
@@ -427,7 +422,7 @@ bot.onText(/\/listalert/, async (msg, match) => {
       });
     };
 
-    const message = `<b><u>Alert(s)</u></b>\n\n${alertList.map((alert, index) => { return `${index + 1}. Alert ID: <b>${alert.alertCode}</b>\n    Crypto ID+: <b>${alert.coinId}</b>\n    Target price: <b>${formatCurrency(alert.targetPrice)}</b>\n    Target reached: <b>${alert.targetReached ? 'Yes' : 'No'}</b>${alert.triggerDate ? `\n    Date observed (UTC): <b>${formatEpochToDate(alert.triggerDate)}</b>` : ''}` }).join('\n\n')}`;
+    const message = `<b><u>Alert(s)</u></b>\n\n${alertList.map((alert, index) => { return `${index + 1}. Alert ID: <b>${alert.alertCode}</b>\n    Crypto ID: <b>${alert.coinId}</b>\n    Target price: <b>${formatCurrency(alert.targetPrice)}</b>\n    Target reached: <b>${alert.targetReached ? 'Yes' : 'No'}</b>${alert.triggerDate ? `\n    Date observed (UTC): <b>${formatEpochToDate(alert.triggerDate)}</b>` : ''}` }).join('\n\n')}`;
     await bot.sendMessage(chatId, message, {
       parse_mode: "HTML",
     });
@@ -449,11 +444,11 @@ bot.onText(/\/removealert (.+)/, async (msg, match) => {
     }
 
     const response = await cryptoTrendsDB.updateAlertList(false, { chatId, alertCode });
-    if (response.modifiedCount === 0) return await bot.sendMessage(chatId, 'No Alerts with the provided ID was found.\n\nYou can use the /listalert command and try again');
+    if (response.modifiedCount === 0) return await bot.sendMessage(chatId, 'No Alerts with the provided ID was found.\n\nYou can use the /listalert command and try again.');
 
     // Get pre-existing alerts
     const alerts = await cryptoTrendsDB.retrievAlertsLength(chatId);
-    return await bot.sendMessage(chatId, `Alert with ID: ${alertCode}, has been removed.\n\nUnset alert: ${3 - alerts}`);
+    return await bot.sendMessage(chatId, `Alert with ID: ${alertCode}, has been removed.\n\nUnset alert(s) left: ${3 - alerts}`);
   } catch (error) {
     console.error(error);
     await bot.sendMessage(msg.chat.id, "An error occurred, please try again.");

@@ -1,6 +1,6 @@
 # CRYPTO TELEGRAM BOT
 This bot serves different functions, it can fetch realtime cryptocurrency prices, as provided by coinGecko-API, majorly, it can set price alerts, and perform CRUD actions for that,create alert, remove alert, add new alerts and delete alerts. You can also get interesting information about your favorite cryptocurrency as well.
-It uses mongoDB for this, and for me, this is run in a DOckerized container on, GCP VM instance. You can check out the bot [here](https://web.telegram.org/k/#@trendora_bot).
+It uses mongoDB for this, and for me, this is run in a Dckerized container on, GCP VM instance. You can check out the bot [here](https://web.telegram.org/k/#@trendora_bot).
 
 
 ## Its Components.
@@ -42,4 +42,4 @@ You can also contribute to improving how this works, by sending in a pull reques
 
 ## Reach me
 This was written and developed by me, Ebode.
-You can find more adventurous solutions I have developed in my corner [here](https://ebode.dev).
+You can find more adventurous solutions I have developed in my corner [here](https://www.ebode.dev).
