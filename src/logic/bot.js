@@ -45,7 +45,7 @@ bot.onText(/\/start/, async (msg, match) => {
 // Command manual response
 bot.onText(/\/help/, async (msg, match) => {
   try {
-    const message = `Available commands and how to use them.\n\n/trending < - /1/3/5/10>\n- Top trending cryptocurrencies.\n• Ex: '/trending'  -  top 5 trending assets\n         '/trending 3'  -  top 3 trending assets\n\n/find <cryptocurrency>\n- Find cryptocurrency id to be used with other commands.\n• Ex: '/find dogecoin'\n\n/price <cryptocurrency-id>\n- Get the price of a cryptocurrency or token.\n• Ex: '/price bitcoin'\n\n/info <cryptocurrency-id>\n- Get information and interesting facts about selected cryptocurrency if available.\n• Ex: '/info bitcoin'\n\n/setalert <cryptocurrency-id> <price>\n- Set a price alert for a cryptocurrency, acceptable to six(6) decimal place.\n• Ex: '/setalert bitcoin 120000'\n• Ex: '/setalert dogecoin 0.512312'\n\n/listalert\n- List all active alerts and id.\n• Ex: '/listalert'\n\n/removealert <alert-id>\n- Remove active alert with id.\n• Ex: '/removealert eq123Dr'`;
+    const message = `Available commands and how to use them.\n\n/trending < - /1/3/5/10>\n- Top trending cryptocurrencies (based on search).\n• Ex: '/trending'  -  top 5 trending assets\n         '/trending 3'  -  top 3 trending assets\n\n/find <cryptocurrency>\n- Find cryptocurrency id to be used with other commands.\n• Ex: '/find dogecoin'\n\n/price <cryptocurrency-id>\n- Get the price of a cryptocurrency or token.\n• Ex: '/price bitcoin'\n\n/info <cryptocurrency-id>\n- Get information and interesting facts about selected cryptocurrency if available.\n• Ex: '/info bitcoin'\n\n/setalert <cryptocurrency-id> <price>\n- Set a price alert for a cryptocurrency, acceptable to six(6) decimal place.\n• Ex: '/setalert bitcoin 120000'\n• Ex: '/setalert dogecoin 0.512312'\n\n/listalert\n- List all active alerts and id.\n• Ex: '/listalert'\n\n/removealert <alert-id>\n- Remove active alert with id.\n• Ex: '/removealert eq123Dr'`;
     await bot.sendMessage(msg.chat.id, message);
   } catch (error) {
     await bot.sendMessage(msg.chat.id, "An error occured, please try again.");
@@ -66,7 +66,8 @@ bot.onText(/\/trending(?: (\d+))?/, async (msg, match) => {
       return value.toLocaleString("en-US", {
         style: "currency",
         currency: "USD",
-        maximumFractionDigits: 3,
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 6
       });
     };
 
@@ -126,7 +127,7 @@ bot.onText(/\/find (.+)/, async (msg, match) => {
       },
     };
 
-    const response = await axios.get(url, options);
+    const response = await axios.request(url, options);
     const data = response.data;
 
     const message = `<b><u>Top Matching Results</u></b>\n\n${data.coins
@@ -138,9 +139,9 @@ bot.onText(/\/find (.+)/, async (msg, match) => {
       })
       .join(
         "\n\n"
-      )}\n\nYou only need the matching id for your desired coin/token, to use with other commands.\nEx: To get the price info for <b>${data.coins[0].symbol
-      }</b>, use the command: <b>'/price ${data.coins[0].id
-      }</b>'\n\nFor a more comprehensive list, check <a href="https://docs.google.com/spreadsheets/d/1wTTuxXt8n9q7C4NDXqQpI3wpKu1_5bGVmP9Xz0XGSyU">here</a>`;
+      )}\n\nYou only need the matching id for the coin/token, to use with other commands.\nEx: To get the price info for <b>${data.coins[0].name}(${data.coins[0].symbol
+      })</b>, use the command: <b>'/price ${data.coins[0].id
+      }</b>'\n\nFor a comprehensive list of all ids, check <a href="https://docs.google.com/spreadsheets/d/1wTTuxXt8n9q7C4NDXqQpI3wpKu1_5bGVmP9Xz0XGSyU">here</a>`;
 
     await bot.sendMessage(chatId, message, {
       parse_mode: "HTML",
@@ -167,7 +168,8 @@ bot.onText(/\/price (.+)/, async (msg, match) => {
       return value.toLocaleString("en-US", {
         style: "currency",
         currency: "USD",
-        maximumFractionDigits: 3,
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 6
       });
     };
 
@@ -180,9 +182,10 @@ bot.onText(/\/price (.+)/, async (msg, match) => {
       },
     };
 
-    const response = await axios.get(url, options);
+    const response = await axios.request(url, options);
     const data = response.data;
 
+    // console.log(data.market_data, data.market_data.price_change_percentage_1h_in_currency.usd)
     const message = `<b><u>Coin Data</u></b>\n1. Name: <b>${data.name
       }</b>\n2. Ticker: <b>${String(
         data.symbol
@@ -195,17 +198,17 @@ bot.onText(/\/price (.+)/, async (msg, match) => {
         data.market_data.atl_change_percentage.usd
       ).slice(
         2
-      )}%</b>\n7. Price Change(%):\n      |- 1hr: ${data.market_data.price_change_percentage_1h_in_currency.usd.toFixed(
+      )}%</b>\n7. Price Change:\n      |- 1hr: ${data.market_data.price_change_percentage_1h_in_currency.usd ? data.market_data.price_change_percentage_1h_in_currency.usd.toFixed(
         3
-      )}%\n      |- 24hr: ${data.market_data.price_change_percentage_24h_in_currency.usd.toFixed(
+      )+'%' : 'N/A'}\n      |- 24hr: ${data.market_data.price_change_percentage_24h_in_currency.usd ? data.market_data.price_change_percentage_24h_in_currency.usd.toFixed(
         3
-      )}%\n      |- 7D: ${data.market_data.price_change_percentage_7d_in_currency.usd.toFixed(
+      )+'%' : 'N/A'}\n      |- 7D: ${data.market_data.price_change_percentage_7d_in_currency.usd ? data.market_data.price_change_percentage_7d_in_currency.usd.toFixed(
         3
-      )}%\n      |- 30D: ${data.market_data.price_change_percentage_30d_in_currency.usd.toFixed(
+      )+'%' : 'N/A'}\n      |- 30D: ${data.market_data.price_change_percentage_30d_in_currency.usd ? data.market_data.price_change_percentage_30d_in_currency.usd.toFixed(
         3
-      )}%\n      |- 1Yr: ${data.market_data.price_change_percentage_1y_in_currency.usd.toFixed(
+      )+'%' : 'N/A'}\n      |- 1Yr: ${data.market_data.price_change_percentage_1y_in_currency.usd ? data.market_data.price_change_percentage_1y_in_currency.usd.toFixed(
         3
-      )}%`;
+      )+'%' : 'N/A'}`;
     await bot.sendMessage(chatId, message, { parse_mode: "HTML" });
   } catch (error) {
     console.error(error);
@@ -229,7 +232,8 @@ bot.onText(/\/info (.+)/, async (msg, match) => {
         return value.toLocaleString("en-US", {
           style: "currency",
           currency: "USD",
-          maximumFractionDigits: 3,
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 6
         });
       } catch (error) {
         return `-N/A`;
@@ -240,18 +244,18 @@ bot.onText(/\/info (.+)/, async (msg, match) => {
       try {
         if (!dateString) return "N/A";
         const months = [
-          "January",
-          "February",
-          "March",
-          "April",
+          "Jan.",
+          "Feb.",
+          "Mar.",
+          "Apr.",
           "May",
-          "June",
-          "July",
-          "August",
-          "September",
-          "October",
-          "November",
-          "December",
+          "Jun.",
+          "Jul.",
+          "Aug.",
+          "Sep.",
+          "Oct.",
+          "Nov.",
+          "Dec.",
         ];
 
         const date = new Date(dateString);
@@ -297,16 +301,16 @@ bot.onText(/\/info (.+)/, async (msg, match) => {
         data.market_data.max_supply
       ).slice(1)}</b>\n9. Circulating Supply: <b>${formatCurrency(
         data.market_data.circulating_supply
-      ).slice(1)}</b>\n10. Dev Repo: <b>${data.links.repos_url.github.length > 0
+      ).slice(1)}${ data.links.repos_url.github.length > 0 || data.links.repos_url.bitbucket.length > 0 ? `</b>\n10. Dev Repo: <b>${data.links.repos_url.github.length > 0
         ? `\n       |- <a href="${data.links.repos_url.github[0]}">Github-repo</a>`
         : ""
-      }${data.links.repos_url.bitbucket.length > 0
+      }` : ''}${data.links.repos_url.bitbucket.length > 0
         ? `\n       |- <a href="${data.links.repos_url.bitbucket[0]}">Bitbucket-repo</a>`
         : ""
-      }</b>\n11. Socials: <b>${data.links.twitter_screen_name
+      }</b>${data.links.twitter_screen_name || data.links.subreddit_url || data.links.telegram_channel_identifier ? `\n${data.links.repos_url.github.length > 0 || data.links.repos_url.bitbucket.length > 0 ? '11' : '10'}. Socials: <b>${data.links.twitter_screen_name
         ? `\n       |- <a href="https://x.com/${data.links.twitter_screen_name}">x.com/${data.links.twitter_screen_name}</a>`
         : ""
-      }${data.links.subreddit_url
+      }:` : ''}${data.links.subreddit_url
         ? `\n       |- <a href="${data.links.subreddit_url
         }">${data.links.subreddit_url.replace("https://www.", "")}</a>`
         : ""
@@ -467,7 +471,7 @@ async function isCoinValid(coin) {
     },
   };
 
-  const response = await axios.get(url, options);
+  const response = await axios.request(url, options);
   const data = response.data;
 
   if (data.error) {
@@ -520,7 +524,7 @@ async function fetchPrice(id) {
     };
 
     const url = `https://api.coingecko.com/api/v3/coins/${id}`;
-    const response = await axios.get(url, options);
+    const response = await axios.request(url, options);
     const data = response.data;
 
     if (data.error) {
