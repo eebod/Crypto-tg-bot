@@ -4,7 +4,7 @@ require('dotenv').config();
 class DB{
     constructor(){
         this.db; // DB Object
-        this.tgUserCollection // Collection Identifier
+        this.UserCollection // Collection Identifier
     }
 
     connect(){
@@ -19,7 +19,7 @@ class DB{
                 this.userCollection = this.db.collection('users');
                 resolve(true);
             } catch (error) {
-                // console.error(error); // used in development
+                console.error(error);
                 reject(false)
             }
         });
@@ -30,22 +30,18 @@ class DB{
             const { chatId, coinId, targetPrice, alertCode, targetReached } = dataObj;
             await this.userCollection.insertOne({_id:chatId, alerts:[{ coinId, targetPrice, alertCode, targetReached }]})
         } catch (error) {
-            if(error.message.includes('E11000')){
-                const { code, email, time } = dataObj;
-                await this.userCollection.updateOne({_id: email}, { $set: { time: time, code: code}})
-            } else {
-                throw error;
-            }
+            console.error(error);
+            throw error;
         }
     }
 
     async retrieveAlerts(chatId){
         try {
             const data = await this.userCollection.findOne({_id: chatId});
-            if(data) return data.alerts;
+            if (data) return data.alerts;
             return null;
         } catch (error) {
-            // console.error(error);
+            console.error(error);
             throw error;
         }
     }
@@ -62,7 +58,7 @@ class DB{
             }
             return data;
         } catch (error) {
-            // console.error(error);
+            console.error(error);
             throw error;
         }
     }
@@ -71,11 +67,11 @@ class DB{
         try {
             const data = await this.userCollection.findOne({_id: chatId});
             if(!data){
-                return 0;
+                return {qty: 0, usrAvb: false};
             }
-            return data.alerts.length;
+            return {qty: data.alerts.length, usrAvb: true};
         } catch (error) {
-            // console.error(error);
+            console.error(error);
             throw error;
         }
     }
@@ -95,7 +91,7 @@ class DB{
             const uniqueData = [...new Set(filteredData)];
             return uniqueData;
         } catch (error) {
-            // console.error(error);
+            console.error(error);
             throw error;
         }
     }
@@ -149,7 +145,7 @@ class DB{
             
             return updatedIds;
         } catch (error) {
-            // console.error(error);
+            console.error(error);
             throw error;
         }
     }

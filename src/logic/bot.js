@@ -366,11 +366,10 @@ bot.onText(/\/setalert (.+) (\d+(\.\d+)?)/, async (msg, match) => {
 
     // Get pre-existing alerts
     const alerts = await cryptoTrendsDB.retrievAlertsLength(chatId);
-    if (alerts >= 3) return await bot.sendMessage(chatId, "Your Alert list cannot exceed three(3) items.\nYou can remove older alerts.");
+    if (alerts.userAvb && alerts.qty >= 3) return await bot.sendMessage(chatId, "Your Alert list cannot exceed three(3) items.\n\nYou can remove older alerts.");
 
     const alertCode = generateAlertCode();
-
-    if (alerts === 0) {
+    if (alerts.userAvb && alerts.qty < 1) {
       // Insert new alert to DB
       await cryptoTrendsDB.insertAlert({
         chatId: msg.chat.id,
@@ -415,7 +414,8 @@ bot.onText(/\/listalert/, async (msg, match) => {
     }
 
     const alertList = await cryptoTrendsDB.retrieveAlerts(msg.chat.id);
-    if (!alertList || alertList.length<1) return await bot.sendMessage(chatId, "There are no alert items available.");
+    console.log(alertList);
+    if (!alertList || alertList.length < 1) return await bot.sendMessage(chatId, "There are no set alert(s).");
 
     const formatCurrency = (value) => {
       return value.toLocaleString("en-US", {
@@ -452,7 +452,7 @@ bot.onText(/\/removealert (.+)/, async (msg, match) => {
 
     // Get pre-existing alerts
     const alerts = await cryptoTrendsDB.retrievAlertsLength(chatId);
-    return await bot.sendMessage(chatId, `Alert with ID: ${alertCode}, has been removed.\n\nUnset alert(s) left: ${3 - alerts}`);
+    return await bot.sendMessage(chatId, `Alert with ID: ${alertCode}, has been removed.\n\nUnset alert(s) left: ${3 - alerts.qty}`);
   } catch (error) {
     console.error(error);
     await bot.sendMessage(msg.chat.id, "An error occurred, please try again.");
@@ -493,7 +493,7 @@ function generateAlertCode() {
 async function checkPrices() {
   try {
     const activeSearch = await cryptoTrendsDB.retrieveActivealerts();
-    if (!activeSearch) return console.log('Nothing to search.');
+    if (!activeSearch) return;
 
     activeSearch.forEach(async (cid) => {
       const price = await fetchPrice(cid);
