@@ -32,7 +32,7 @@ if (process.env.NODE_ENV == 'PROD') {
 // Response on first bot interaction/call
 bot.onText(/\/start/, async (msg, match) => {
   try {
-    const message = `Welcome <b>${msg.chat.username}</b>, I'm <b>Trendora</b>, your cryptocurrency assistant. I can help you with: \n\n➙ <b>Live Prices:</b> Get real-time cryptocurrency prices.\n\n➙ <b>Price Monitoring:</b> Keep track of price changes and receive alerts:\n\n      • Target price reached/crossed(↑|↓).\n\n      • 0.1% price UP or DOWN threshold alert.\n\n➙ <b>Trending Cryptos:</b> Discover the top trending cryptocurrencies, sorted by search popularity.\n\nTo learn and get started with available commands, use /help\n\nPowered by <b><a href="https://www.coingecko.com/en/api/">CoinGecko</a></b>\n\n<b><a href="https://www.ebode.dev">Meet-me</a></b> | &lt;Backend Engineer&gt;`;
+    const message = `Welcome <b>${msg.chat.username}</b>, I'm <b>Trendora</b>, your cryptocurrency assistant. I can help you with: \n\n➙ <b>Live Prices:</b> Get real-time cryptocurrency prices.\n\n➙ <b>Price Monitoring:</b> Keep track of price changes and receive alerts:\n\n      • Target price reached/crossed(↑|↓).\n\n      • 0.1% price UP or DOWN threshold alert.\n\n➙ <b>Trending Cryptos:</b> Discover the top trending cryptocurrencies, sorted by search popularity.\n\nTo learn and get started with available commands, use /help\n\nPowered by <b><a href="https://www.coingecko.com/en/api/">CoinGecko</a></b>\nWatch <b><a href="https://youtu.be/rtZJIo1L_iA?t=267">video</a></b> to learn to use bot.\n\n<b><a href="https://www.ebode.dev">Meet-me</a></b> | &lt;Backend Engineer&gt;`;
     await bot.sendMessage(msg.chat.id, message, {
       parse_mode: "HTML",
       disable_web_page_preview: false,
@@ -397,7 +397,7 @@ bot.onText(/\/setalert (.+) (\d+(\.\d+)?)/, async (msg, match) => {
       });
     };
 
-    await bot.sendMessage(chatId, `<b><u>Alert</u></b>\nAlert set for <b>'${cryptoId}'</b> at price <b>${formatCurrency(price)}</b>.\n\nAlert ID: <b>${alertCode}</b>\n\nUnset alert(s) left: <b>${3 - (1 + alerts)}</b>\n\n<b><u>Info</u></b>\n\nYou are advised to set a different notification sound for this chat. This would help easily identify alert notification. You can watch this <b><a href="https://youtube.com/shorts/nqXO5MGH2Y8">video</a></b> to learn how.\n\nAlert notifications are delivered with three rapid consecutive messages and notifications.\n\nPlease take note!`, { parse_mode: 'HTML', disable_web_page_preview: true });
+    await bot.sendMessage(chatId, `<b><u>Alert</u></b>\nAlert set for <b>'${cryptoId}'</b> at price <b>${formatCurrency(price)}</b>.\n\nAlert ID: <b>${alertCode}</b>\n\nUnset alert(s) left: <b>${3 - (1 + alerts.qty)}</b>\n\n<b><u>Info</u></b>\n\nYou are advised to set a different notification sound for this chat. This would help easily identify alert notification. You can watch this <b><a href="https://youtube.com/shorts/nqXO5MGH2Y8">video</a></b> to learn how.\n\nAlert notifications are delivered with three rapid consecutive messages and notifications.\n\nPlease take note!`, { parse_mode: 'HTML', disable_web_page_preview: true });
   } catch (error) {
     console.error(error);
     await bot.sendMessage(msg.chat.id, "An error occurred, please try again.");

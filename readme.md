@@ -34,8 +34,7 @@ The app has three main parts,
 - **NODE_ENV=<DEV | PROD>:** During testing, I initially started with polling instead of webhook, when I decided to use webhooks, I needed a way to test thing and ensure they were working as I switched. To handle that more properly and easily, I use an env file which is watched in thebot.js file to know if to switch from polling to webhook in different scenarios. but the NODE_ENV field can be used for more things as well.
 
 ## Watch me use this project
-<!-- [![Watch me use this project](<img-link>)](<video-url>)  
-Click on Image to Youtube video or use link: <video-url> -->
+Click link to watch Youtube video: https://youtu.be/SDMvg1sVY1E
 
 ## Help Improve
 You can also contribute to improving how this works, by sending in a pull request. It can be to fix a problem, improve a section, or to add a new feature.
