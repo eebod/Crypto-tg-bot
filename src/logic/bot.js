@@ -6,49 +6,62 @@ require("dotenv").config();
 const botToken = process.env.BOT_TOKEN;
 const coinGeckoToken = process.env.COINGECKO_TOKEN;
 
+if (!botToken || !coinGeckoToken) {
+  throw new Error("BOT_TOKEN or COINGECKO_TOKEN is not defined in environment variables.");
+}
+
 const DB = require('./db');
 const cryptoTrendsDB = new DB();
 
 let dbUp = false;
-cryptoTrendsDB.connect()
-  .then(() => { dbUp = true; console.log('DB connected.') })
-  .catch(() => { console.log('DB not connected!') })
-
+(async () => {
+  try {
+    await cryptoTrendsDB.connect();
+    dbUp = true;
+    console.log('DB connected.');
+  } catch (error) {
+    console.error('DB connection failed:', error.message);
+  }
+})();
 
 let bot;
-if (process.env.NODE_ENV == 'PROD') {
+if (process.env.NODE_ENV === 'PROD') {
   const webhookUrl = process.env.WEBHOOK_URL;
+  if (!webhookUrl) {
+    throw new Error("WEBHOOK_URL is not defined in environment variables.");
+  }
   bot = new TelegramBot(botToken);
 
   // Set webhook
   bot.setWebHook(`${webhookUrl}${botToken}`);
 } else {
-
-  // Set Poll
+  // Set Polling
   bot = new TelegramBot(botToken, { polling: true });
 }
 
-
 // Response on first bot interaction/call
-bot.onText(/\/start/, async (msg, match) => {
+bot.onText(/\/start/, async (msg) => {
   try {
-    const message = `Welcome <b>${msg.chat.username}</b>, I'm <b>Trendora</b>, your cryptocurrency assistant. I can help you with: \n\n➙ <b>Live Prices:</b> Get real-time cryptocurrency prices.\n\n➙ <b>Price Monitoring:</b> Keep track of price changes and receive alerts:\n\n      • Target price reached/crossed(↑|↓).\n\n      • 0.1% price UP or DOWN threshold alert.\n\n➙ <b>Trending Cryptos:</b> Discover the top trending cryptocurrencies, sorted by search popularity.\n\nTo learn and get started with available commands, use /help\n\nPowered by <b><a href="https://www.coingecko.com/en/api/">CoinGecko</a></b>\nWatch <b><a href="https://youtu.be/rtZJIo1L_iA?t=267">video</a></b> to learn to use bot.\n\n<b><a href="https://www.ebode.dev">Meet-me</a></b> | &lt;Backend Engineer&gt;`;
+    const username = msg.chat.username || "User";
+    const message = `Welcome <b>${username}</b>, I'm <b>Trendora</b>, your cryptocurrency assistant. I can help you with: \n\n➙ <b>Live Prices:</b> Get real-time cryptocurrency prices.\n\n➙ <b>Price Monitoring:</b> Keep track of price changes and receive alerts:\n\n      • Target price reached/crossed(↑|↓).\n\n      • 0.1% price UP or DOWN threshold alert.\n\n➙ <b>Trending Cryptos:</b> Discover the top trending cryptocurrencies, sorted by search popularity.\n\nTo learn and get started with available commands, use /help\n\nPowered by <b><a href="https://www.coingecko.com/en/api/">CoinGecko</a></b>\nWatch <b><a href="https://youtu.be/rtZJIo1L_iA?t=267">video</a></b> to learn to use bot.\n\n<b><a href="https://www.ebode.dev">Meet-me</a></b> | &lt;Backend Engineer&gt;`;
     await bot.sendMessage(msg.chat.id, message, {
       parse_mode: "HTML",
       disable_web_page_preview: false,
     });
   } catch (error) {
-    await bot.sendMessage(msg.chat.id, "An error occured, please try again.");
+    console.error('Error in /start command:', error.message);
+    await bot.sendMessage(msg.chat.id, "An error occurred, please try again.");
   }
 });
 
 // Command manual response
-bot.onText(/\/help/, async (msg, match) => {
+bot.onText(/\/help/, async (msg) => {
   try {
     const message = `Available commands and how to use them.\n\n/trending < - /1/3/5/10>\n- Top trending cryptocurrencies (based on search).\n• Ex: '/trending'  -  top 5 trending assets\n         '/trending 3'  -  top 3 trending assets\n\n/find <cryptocurrency>\n- Find cryptocurrency id to be used with other commands.\n• Ex: '/find dogecoin'\n\n/price <cryptocurrency-id>\n- Get the price of a cryptocurrency or token.\n• Ex: '/price bitcoin'\n\n/info <cryptocurrency-id>\n- Get information and interesting facts about selected cryptocurrency if available.\n• Ex: '/info bitcoin'\n\n/setalert <cryptocurrency-id> <price>\n- Set a price alert for a cryptocurrency, acceptable to six(6) decimal place.\n• Ex: '/setalert bitcoin 120000'\n• Ex: '/setalert dogecoin 0.512312'\n\n/listalert\n- List all active alerts and id.\n• Ex: '/listalert'\n\n/removealert <alert-id>\n- Remove active alert with id.\n• Ex: '/removealert eq123Dr'`;
     await bot.sendMessage(msg.chat.id, message);
   } catch (error) {
-    await bot.sendMessage(msg.chat.id, "An error occured, please try again.");
+    console.error('Error in /help command:', error.message);
+    await bot.sendMessage(msg.chat.id, "An error occurred, please try again.");
   }
 });
 
@@ -462,23 +475,22 @@ bot.onText(/\/removealert (.+)/, async (msg, match) => {
 
 // Utility
 async function isCoinValid(coin) {
-  const url = `https://api.coingecko.com/api/v3/coins/${coin}`;
-  const options = {
-    method: "GET",
-    headers: {
-      accept: "application/json",
-      "x-cg-demo-api-key": coinGeckoToken,
-    },
-  };
+  try {
+    const url = `https://api.coingecko.com/api/v3/coins/${coin}`;
+    const options = {
+      method: "GET",
+      headers: {
+        accept: "application/json",
+        "x-cg-demo-api-key": coinGeckoToken,
+      },
+    };
 
-  const response = await axios.request(url, options);
-  const data = response.data;
-
-  if (data.error) {
+    const response = await axios.request(url, options);
+    return response.status === 200;
+  } catch (error) {
+    console.error('Error validating coin:', error.message);
     return false;
   }
-
-  return true;
 }
 
 function generateAlertCode() {
@@ -493,25 +505,24 @@ function generateAlertCode() {
 async function checkPrices() {
   try {
     const activeSearch = await cryptoTrendsDB.retrieveActivealerts();
-    if (!activeSearch) return;
+    if (!activeSearch || activeSearch.length === 0) return;
 
-    activeSearch.forEach(async (cid) => {
-      const price = await fetchPrice(cid);
-      const alertTriggered = await cryptoTrendsDB.findAndUpdateAlerts(cid, price);
+    for (const cid of activeSearch) {
+      try {
+        const price = await fetchPrice(cid);
+        const alertTriggered = await cryptoTrendsDB.findAndUpdateAlerts(cid, price);
 
-      if (alertTriggered.length > 0) {
-        alertTriggered.forEach(async (item) => {
+        for (const item of alertTriggered) {
           await sendAlertMessage(item.id, cid, item.targetPrice, price);
-        })
+        }
+      } catch (error) {
+        console.error(`Error processing alerts for coin ${cid}:`, error.message);
       }
-
-    })
+    }
   } catch (error) {
-    console.error('An error occured!', error.message);
-    throw error;
+    console.error('Error in checkPrices:', error.message);
   }
 }
-
 
 async function fetchPrice(id) {
   try {
@@ -525,49 +536,53 @@ async function fetchPrice(id) {
 
     const url = `https://api.coingecko.com/api/v3/coins/${id}`;
     const response = await axios.request(url, options);
-    const data = response.data;
-
-    if (data.error) {
-      throw new Error(data.error.message)
-    }
-
-    return data.market_data.current_price.usd;
+    return response.data.market_data.current_price.usd;
   } catch (error) {
+    console.error(`Error fetching price for ${id}:`, error.message);
     throw error;
   }
 }
 
-
 async function sendAlertMessage(chatId, coinId, triggerPrice, currentPrice) {
+  try {
+    const formatCurrency = (value) => {
+      return value.toLocaleString("en-US", {
+        style: "currency",
+        currency: "USD",
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 6
+      });
+    };
 
-  const formatCurrency = (value) => {
-    return value.toLocaleString("en-US", {
-      style: "currency",
-      currency: "USD",
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 6
-    });
-  };
+    const message = `<b><u>Alert Notification</u></b>\n\nOne of your set alerts just got triggered within the '0.1%' up|down threshold.\n\n<b>Details</b>\n- Crypto ID: <b>${coinId}</b>\n- Alert price: <b>${formatCurrency(triggerPrice)}</b>\n- Current price: <b>${formatCurrency(currentPrice)}</b>\n\nThis alert has been triggered and will stop being monitored. You can remove it with the '/removealert &lt;crypto-id&gt;' command and set another.`;
 
-  await bot.sendMessage(chatId, `${coinId} Alert Trigger Notification`);
-  await bot.sendMessage(chatId, `${coinId} Alert Trigger Notification`);
-  await bot.sendMessage(chatId, `<b><u>Alert Notification</u></b>\n\nOne of your set alert Just got triggered within the '0.1%' up|down threshold.\n\n<b>Details</b>\n- Crypto ID: <b>${coinId}</b>\n- Alert price: <b>${formatCurrency(triggerPrice)}</b>\n- Current price: <b>${formatCurrency(currentPrice)}</b>\n\nThis alert has been triggered, and would stop getting monitored. You can remove it with the '/removealert &lt;crypto-id&gt;' command and then set another.`, { parse_mode: 'HTML' });
-
+    for (let i = 0; i < 3; i++) {
+      await bot.sendMessage(chatId, `${coinId} Alert Trigger Notification`);
+    }
+    await bot.sendMessage(chatId, message, { parse_mode: 'HTML' });
+  } catch (error) {
+    console.error('Error sending alert message:', error.message);
+  }
 }
 
 function formatEpochToDate(epochSeconds) {
-  const date = new Date(epochSeconds * 1000);
-  const options = { year: 'numeric', month: 'short', day: 'numeric', hour: 'numeric', minute: 'numeric', hour12: true, timeZone: 'UTC' };
-  return date.toLocaleString('en-US', options);
+  try {
+    const date = new Date(epochSeconds * 1000);
+    const options = { year: 'numeric', month: 'short', day: 'numeric', hour: 'numeric', minute: 'numeric', hour12: true, timeZone: 'UTC' };
+    return date.toLocaleString('en-US', options);
+  } catch (error) {
+    console.error('Error formatting date:', error.message);
+    return 'Invalid date';
+  }
 }
-
-
 
 // Price Checker Cron
 cron.schedule("*/10 * * * *", async () => {
   if (dbUp) {
-    await checkPrices();
+    try {
+      await checkPrices();
+    } catch (error) {
+      console.error('Error in price checker cron job:', error.message);
+    }
   }
 });
-
-module.exports = bot;

@@ -1,0 +1,15 @@
+services:
+  verifier-engine:
+    build:
+      context: .
+    image: stabot
+    networks:
+      - app-network
+    container_name: stabot-engine
+    ports:
+      - "5000:5000"
+    restart: always
+
+networks:
+  app-network:
+    external: true
