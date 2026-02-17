@@ -586,3 +586,5 @@ cron.schedule("*/10 * * * *", async () => {
     }
   }
 });
+
+module.exports = bot;

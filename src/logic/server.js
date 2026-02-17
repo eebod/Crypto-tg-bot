@@ -7,7 +7,7 @@ app.use(express.json());
 
 // Health check
 app.get(`/`, (req,res) => {
-  res.status(200).json({ msg: "Bot Api is up and botting!"});
+  res.status(200).json({ msg: "Bot API is up and botting!"});
 })
 
 app.listen(PORT, () => {
@@ -15,7 +15,7 @@ app.listen(PORT, () => {
 });
 
 module.exports = function (bot, token) {
-  app.post(`/${token}`, (req,res) => {
+  app.post(`/${token}`, (req, res) => {
     bot.processUpdate(req.body);
     res.sendStatus(200);
   })
